@@ -20,11 +20,13 @@ import org.slf4j.LoggerFactory;
 
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
+
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -114,6 +116,8 @@ public class EventosService implements IEventosService {
         List<Evento> eventosNoDuplicados = eventosEncontrados.stream()
             .filter(evento -> !dao.existsByTituloYDescripcion(evento.getEveTitulo(), evento.getEveDescripcion()))
             .collect(Collectors.toList());
+        
+        validarCategorias(eventosNoDuplicados);
 
         eventosNoDuplicados.forEach(evento -> {
             evento.setUsuario(usuario);
@@ -129,16 +133,17 @@ public class EventosService implements IEventosService {
         String apiUrl = API_URL + GEMINI_API_KEY;
         RestTemplate restTemplate = new RestTemplate();
         
-        String prompt = "Genera una lista de eventos futuros que aún no han finalizado, con el siguiente formato: " +
-                "\nTítulo: [Nombre del evento]" +
-                "\nDescripción: [Descripción breve]" +
-                "\nFecha de inicio: [YYYY-MM-DD HH:MM:SS]" +
-                "\nFecha de fin: [YYYY-MM-DD HH:MM:SS]" +
-                "\nUbicación: [Ciudad, país]" +
-                "\nEnlace: [URL del evento si aplica]\n" +
-                "\nSolo quiero eventos que sean a partir de hoy " + LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd")) +
-                " y que no hayan finalizado." +
-                "\nConsulta: " + consulta;
+        String prompt = "Genera una lista de eventos relevantes con el siguiente formato: " +
+        	    "\nTítulo: [Nombre del evento]" +
+        	    "\nDescripción: [Descripción breve]" +
+        	    "\nFecha de inicio: [YYYY-MM-DD HH:MM:SS]" +
+        	    "\nFecha de fin: [YYYY-MM-DD HH:MM:SS]" +
+        	    "\nUbicación: [Ciudad, país]" +
+        	    "\nEnlace: [URL del evento si aplica]" +
+        	    "\nCategoría: [Tecnológico, Financiero, Deportivo, Cultural, etc.]" +  // Aquí refuerzo que debe incluir una categoría
+        	    "\nAsegúrate de que todos los eventos tengan una categoría bien definida." +
+        	    "\nConsulta: " + consulta;
+
         
         String jsonBody = "{ \"model\": \"gemini-2.0-flash\", \"contents\": [{ \"role\": \"user\", \"parts\": [{ \"text\": \"" + prompt + "\" }]}]}";
         
@@ -186,20 +191,19 @@ public class EventosService implements IEventosService {
     
     private List<Evento> parsearEventos(String respuesta, int usuid) {
         List<Evento> eventos = new ArrayList<>();
-        LocalDateTime ahora = LocalDateTime.now();
-
-        String[] bloques = respuesta.split("\\n\\n"); 
-
+        String[] bloques = respuesta.split("\\n\\n"); // Divide por doble salto de línea
+        
         for (String bloque : bloques) {
             Evento evento = new Evento();
-
-            Matcher tituloMatcher = Pattern.compile("\\*\\*Título:\\*\\* (.+)").matcher(bloque);
-            Matcher descripcionMatcher = Pattern.compile("\\*\\*Descripción:\\*\\* (.+)").matcher(bloque);
-            Matcher inicioMatcher = Pattern.compile("\\*\\*Fecha de inicio:\\*\\* (.+)").matcher(bloque);
-            Matcher finMatcher = Pattern.compile("\\*\\*Fecha de fin:\\*\\* (.+)").matcher(bloque);
-            Matcher ubicacionMatcher = Pattern.compile("\\*\\*Ubicación:\\*\\* (.+)").matcher(bloque);
-            Matcher enlaceMatcher = Pattern.compile("\\*\\*Enlace:\\*\\* \\[(.+)\\]").matcher(bloque);
-
+            
+            Matcher tituloMatcher = Pattern.compile("\\\\*Título:\\\\* (.+)").matcher(bloque);
+            Matcher descripcionMatcher = Pattern.compile("\\\\*Descripción:\\\\* (.+)").matcher(bloque);
+            Matcher inicioMatcher = Pattern.compile("\\\\*Fecha de inicio:\\\\* (.+)").matcher(bloque);
+            Matcher finMatcher = Pattern.compile("\\\\*Fecha de fin:\\\\* (.+)").matcher(bloque);
+            Matcher ubicacionMatcher = Pattern.compile("\\\\*Ubicación:\\\\* (.+)").matcher(bloque);
+            Matcher enlaceMatcher = Pattern.compile("\\\\*Enlace:\\\\* \\[(.+)\\]").matcher(bloque);
+            Matcher categoriaMatcher = Pattern.compile("\\\\*Categoria:\\\\* (.+)").matcher(bloque);
+            
             if (tituloMatcher.find()) evento.setEveTitulo(tituloMatcher.group(1));
             if (descripcionMatcher.find()) evento.setEveDescripcion(descripcionMatcher.group(1));
             if (inicioMatcher.find()) {
@@ -212,25 +216,48 @@ public class EventosService implements IEventosService {
             }
             if (ubicacionMatcher.find()) evento.setEveUbicacion(ubicacionMatcher.group(1));
             if (enlaceMatcher.find()) evento.setEveEnlace(enlaceMatcher.group(1));
-
-            // Verificar si el evento ya pasó
-            if (evento.getEveFechaInicio() != null && evento.getEveFechaInicio().toLocalDateTime().isBefore(ahora)) {
-                continue; // Ignorar eventos pasados
+            if (categoriaMatcher.find()) {
+                evento.setEveCategoria(categoriaMatcher.group(1));
+            } else {
+                evento.setEveCategoria("General"); // Categoría por defecto si no se detecta ninguna
             }
+            
 
-            // Asignar estado activo solo si el evento aún no ha finalizado
+            // Asignar valores a los campos faltantes
+            evento.setEveFechaCreacion(Timestamp.valueOf(LocalDateTime.now())); 
+            evento.setEveFechaModificacion(Timestamp.valueOf(LocalDateTime.now()));
+
+            // Determinar estado del evento
             evento.setEveEstado(determinarEstadoEvento(evento));
 
             // Asignar el ID del usuario
             evento.setUsuid(usuid);
             
-            if (evento.getEveTitulo() != null) {
+            if (evento.getEveTitulo() != null) { // Solo agregar si tiene título
                 eventos.add(evento);
             }
         }
         
         return eventos;
     }
+    
+    public void validarCategorias(List<Evento> eventos) {
+        Set<String> categoriasValidas = Set.of(
+            "tecnológico", "financiero", "deportivo", "cultural", "educativo", "general"
+        );
+
+        eventos.forEach(evento -> {
+            String categoriaNormalizada = evento.getEveCategoria().trim().toLowerCase();
+            
+            if (!categoriasValidas.contains(categoriaNormalizada)) {
+                logger.warn("Categoría inválida '{}' en evento '{}'. Se asignará 'General'.", 
+                            evento.getEveCategoria(), evento.getEveTitulo());
+                evento.setEveCategoria("General");
+            }
+        });
+    }
+
+
 
     
     private String determinarEstadoEvento(Evento evento) {

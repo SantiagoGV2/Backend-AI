@@ -9,7 +9,7 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 @SpringBootApplication
 @EntityScan(basePackages = {"co.edu.ue.Project.AI.model"})
 @EnableJpaRepositories(basePackages = {"co.edu.ue.Project.AI.repository"})
-@ComponentScan(basePackages = {"co.edu.ue.Project.AI.service","co.edu.ue.Project.AI.controller","co.edu.ue.Project.AI.repository","co.edu.ue.Project.AI.security"})
+@ComponentScan(basePackages = {"co.edu.ue.Project.AI.service","co.edu.ue.Project.AI.controller","co.edu.ue.Project.AI.repository","co.edu.ue.Project.AI.security","co.edu.ue.Project.AI.dto"})
 public class ProjectAiApplication {
 
 	public static void main(String[] args) {

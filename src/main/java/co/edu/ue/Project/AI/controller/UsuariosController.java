@@ -3,10 +3,8 @@ package co.edu.ue.Project.AI.controller;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-import co.edu.ue.Project.AI.model.Mensaje;
 import co.edu.ue.Project.AI.model.Usuario;
 import co.edu.ue.Project.AI.security.JwtUtil;
-import co.edu.ue.Project.AI.service.IMensajeService;
 import co.edu.ue.Project.AI.service.IUsuariosService;
 
 import java.util.HashMap;
@@ -30,7 +28,7 @@ import org.springframework.web.bind.annotation.RequestHeader;
 
 @RestController 
 @RequestMapping(value = "project-AI")
-@CrossOrigin(origins = "http://127.0.0.1:5500", allowCredentials = "true")
+@CrossOrigin(origins = "*")
 
 
 public class UsuariosController {
@@ -40,8 +38,6 @@ public class UsuariosController {
     @Autowired
 	PasswordEncoder passwordEncoder;
     
-    @Autowired
-    private IMensajeService mensajeService;
     
     @Autowired
     private JwtUtil jwtUtil;
@@ -149,18 +145,4 @@ public class UsuariosController {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
         }
     }
-
-
-    /**
-     * ✅ Endpoint para obtener los mensajes del chat de un usuario específico
-     */
-    @GetMapping("chat/{usu_id}")
-    public ResponseEntity<?> obtenerMensajesChat(@PathVariable Usuario usu_id) {
-        List<Mensaje> mensajes = mensajeService.obtenerMensajesDeUsuario(usu_id);
-        if (mensajes.isEmpty()) {
-            return ResponseEntity.status(HttpStatus.NO_CONTENT).body("No hay mensajes para este usuario.");
-        }
-        return ResponseEntity.ok(mensajes);
-    }
-
 }

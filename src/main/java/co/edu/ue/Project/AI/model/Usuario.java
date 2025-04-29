@@ -33,15 +33,28 @@ public class Usuario implements Serializable {
 
 	//bi-directional many-to-one association to Evento
 	@OneToMany(mappedBy="usuario")
+	@JsonManagedReference(value = "usuario-evento")
 	private List<Evento> eventos;
 
-	@OneToMany(mappedBy="emisor")
-	@JsonManagedReference(value = "usuario-mensajes-emisor")
-	private List<Mensaje> mensajesEnviados;
+	//bi-directional many-to-one association to EventosCompartido
+	@OneToMany(mappedBy="usuario")
+	@JsonManagedReference(value = "usuario-compartir")
+	private List<EventosCompartido> eventosCompartidos;
 
-	@OneToMany(mappedBy="receptor")
-	@JsonManagedReference(value = "usuario-mensajes-receptor")
-	private List<Mensaje> mensajesRecibidos;
+	//bi-directional many-to-one association to EventosGuardado
+	@OneToMany(mappedBy="usuario")
+	@JsonManagedReference(value = "usuario-guardar")
+	private List<EventosGuardado> eventosGuardados;
+
+	//bi-directional many-to-one association to Notificacione
+	@OneToMany(mappedBy="usuario")
+	@JsonManagedReference(value = "usuario-notificacion")
+	private List<Notificacione> notificaciones;
+
+	//bi-directional many-to-one association to Suscripcione
+	@OneToMany(mappedBy="usuario")
+	@JsonManagedReference(value = "usuario-suscripcion")
+	private List<Suscripcione> suscripciones;
 
 	public Usuario() {
 	}
@@ -100,44 +113,92 @@ public class Usuario implements Serializable {
 		return evento;
 	}
 
-	public List<Mensaje> getMensajesEnviados() {
-	    return this.mensajesEnviados;
+	public List<EventosCompartido> getEventosCompartidos() {
+		return this.eventosCompartidos;
 	}
 
-	public void setMensajesEnviados(List<Mensaje> mensajesEnviados) {
-	    this.mensajesEnviados = mensajesEnviados;
+	public void setEventosCompartidos(List<EventosCompartido> eventosCompartidos) {
+		this.eventosCompartidos = eventosCompartidos;
 	}
 
-	public List<Mensaje> getMensajesRecibidos() {
-	    return this.mensajesRecibidos;
+	public EventosCompartido addEventosCompartido(EventosCompartido eventosCompartido) {
+		getEventosCompartidos().add(eventosCompartido);
+		eventosCompartido.setUsuario(this);
+
+		return eventosCompartido;
 	}
 
-	public void setMensajesRecibidos(List<Mensaje> mensajesRecibidos) {
-	    this.mensajesRecibidos = mensajesRecibidos;
+	public EventosCompartido removeEventosCompartido(EventosCompartido eventosCompartido) {
+		getEventosCompartidos().remove(eventosCompartido);
+		eventosCompartido.setUsuario(null);
+
+		return eventosCompartido;
 	}
 
-
-	public Mensaje addMensajeEnviado(Mensaje mensaje) {
-	    getMensajesEnviados().add(mensaje);
-	    mensaje.setEmisor(this);
-	    return mensaje;
+	public List<EventosGuardado> getEventosGuardados() {
+		return this.eventosGuardados;
 	}
 
-	public Mensaje removeMensajeEnviado(Mensaje mensaje) {
-	    getMensajesEnviados().remove(mensaje);
-	    mensaje.setEmisor(null);
-	    return mensaje;
+	public void setEventosGuardados(List<EventosGuardado> eventosGuardados) {
+		this.eventosGuardados = eventosGuardados;
 	}
 
-	public Mensaje addMensajeRecibido(Mensaje mensaje) {
-	    getMensajesRecibidos().add(mensaje);
-	    mensaje.setReceptor(this);
-	    return mensaje;
+	public EventosGuardado addEventosGuardado(EventosGuardado eventosGuardado) {
+		getEventosGuardados().add(eventosGuardado);
+		eventosGuardado.setUsuario(this);
+
+		return eventosGuardado;
 	}
 
-	public Mensaje removeMensajeRecibido(Mensaje mensaje) {
-	    getMensajesRecibidos().remove(mensaje);
-	    mensaje.setReceptor(null);
-	    return mensaje;
+	public EventosGuardado removeEventosGuardado(EventosGuardado eventosGuardado) {
+		getEventosGuardados().remove(eventosGuardado);
+		eventosGuardado.setUsuario(null);
+
+		return eventosGuardado;
 	}
+
+	public List<Notificacione> getNotificaciones() {
+		return this.notificaciones;
+	}
+
+	public void setNotificaciones(List<Notificacione> notificaciones) {
+		this.notificaciones = notificaciones;
+	}
+
+	public Notificacione addNotificacione(Notificacione notificacione) {
+		getNotificaciones().add(notificacione);
+		notificacione.setUsuario(this);
+
+		return notificacione;
+	}
+
+	public Notificacione removeNotificacione(Notificacione notificacione) {
+		getNotificaciones().remove(notificacione);
+		notificacione.setUsuario(null);
+
+		return notificacione;
+	}
+
+	public List<Suscripcione> getSuscripciones() {
+		return this.suscripciones;
+	}
+
+	public void setSuscripciones(List<Suscripcione> suscripciones) {
+		this.suscripciones = suscripciones;
+	}
+
+	public Suscripcione addSuscripcione(Suscripcione suscripcione) {
+		getSuscripciones().add(suscripcione);
+		suscripcione.setUsuario(this);
+
+		return suscripcione;
+	}
+
+	public Suscripcione removeSuscripcione(Suscripcione suscripcione) {
+		getSuscripciones().remove(suscripcione);
+		suscripcione.setUsuario(null);
+
+		return suscripcione;
+	}
+
 }

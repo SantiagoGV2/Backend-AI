@@ -15,4 +15,5 @@ public interface IUsuariosService {
     Usuario findByEmail(String email);
     Usuario findByNombre(String nombre);
     boolean bajaUsuarios(int usu_id);
+    boolean borrarHistorialEventosUsuario(int usu_id);
 }

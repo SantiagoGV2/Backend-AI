@@ -3,8 +3,10 @@ package co.edu.ue.Project.AI.model;
 import java.io.Serializable;
 import jakarta.persistence.*;
 import java.sql.Timestamp;
+import java.util.List;
 
 import com.fasterxml.jackson.annotation.JsonBackReference;
+import com.fasterxml.jackson.annotation.JsonManagedReference;
 
 
 /**
@@ -21,6 +23,9 @@ public class Evento implements Serializable {
 	@GeneratedValue(strategy=GenerationType.IDENTITY)
 	@Column(name="eve_id")
 	private int eveId;
+
+	@Column(name="eve_categoria")
+	private String eveCategoria;
 
 	@Lob
 	@Column(name="eve_descripcion")
@@ -53,8 +58,18 @@ public class Evento implements Serializable {
 	//bi-directional many-to-one association to Usuario
 	@ManyToOne
 	@JoinColumn(name="usu_id")
-	@JsonBackReference
+	@JsonBackReference(value = "usuario-evento")
 	private Usuario usuario;
+
+	//bi-directional many-to-one association to EventosCompartido
+	@OneToMany(mappedBy="evento")
+	@JsonManagedReference(value = "eventoIA-compartir")
+	private List<EventosCompartido> eventosCompartidos;
+
+	//bi-directional many-to-one association to EventosGuardado
+	@OneToMany(mappedBy="evento")
+	@JsonManagedReference(value = "eventoIA-guardar")
+	private List<EventosGuardado> eventosGuardados;
 
 	public Evento() {
 	}
@@ -65,6 +80,14 @@ public class Evento implements Serializable {
 
 	public void setEveId(int eveId) {
 		this.eveId = eveId;
+	}
+
+	public String getEveCategoria() {
+		return this.eveCategoria;
+	}
+
+	public void setEveCategoria(String eveCategoria) {
+		this.eveCategoria = eveCategoria;
 	}
 
 	public String getEveDescripcion() {
@@ -146,6 +169,50 @@ public class Evento implements Serializable {
 	public void setUsuario(Usuario usuario) {
 		this.usuario = usuario;
 	}
+
+	public List<EventosCompartido> getEventosCompartidos() {
+		return this.eventosCompartidos;
+	}
+
+	public void setEventosCompartidos(List<EventosCompartido> eventosCompartidos) {
+		this.eventosCompartidos = eventosCompartidos;
+	}
+
+	public EventosCompartido addEventosCompartido(EventosCompartido eventosCompartido) {
+		getEventosCompartidos().add(eventosCompartido);
+		eventosCompartido.setEvento(this);
+
+		return eventosCompartido;
+	}
+
+	public EventosCompartido removeEventosCompartido(EventosCompartido eventosCompartido) {
+		getEventosCompartidos().remove(eventosCompartido);
+		eventosCompartido.setEvento(null);
+
+		return eventosCompartido;
+	}
+
+	public List<EventosGuardado> getEventosGuardados() {
+		return this.eventosGuardados;
+	}
+
+	public void setEventosGuardados(List<EventosGuardado> eventosGuardados) {
+		this.eventosGuardados = eventosGuardados;
+	}
+
+	public EventosGuardado addEventosGuardado(EventosGuardado eventosGuardado) {
+		getEventosGuardados().add(eventosGuardado);
+		eventosGuardado.setEvento(this);
+
+		return eventosGuardado;
+	}
+
+	public EventosGuardado removeEventosGuardado(EventosGuardado eventosGuardado) {
+		getEventosGuardados().remove(eventosGuardado);
+		eventosGuardado.setEvento(null);
+
+		return eventosGuardado;
+	}
 	
 	public int getUsuid() {
 	    return (usuario != null) ? usuario.getUsuId() : 0; // Retorna 0 si no hay usuario asociado
@@ -157,6 +224,5 @@ public class Evento implements Serializable {
 	        }
 	        this.usuario.setUsuId(usuid);
 	    }
-	
 
 }

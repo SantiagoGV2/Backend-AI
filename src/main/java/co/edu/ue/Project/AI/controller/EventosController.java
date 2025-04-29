@@ -69,15 +69,28 @@ public class EventosController {
         return service.actualizarEventos(eventos);
     }
     
-    @DeleteMapping(value = "/eventos/{eve_id}")
-    public ResponseEntity<String> deleteEventos(@PathVariable int eve_id) {
-    boolean isDeleted = service.bajaEventos(eve_id);
-    if (isDeleted) {
-        return ResponseEntity.ok("Evento eliminado correctamente.");
-    } else {
-        return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Evento no encontrado.");
+    @DeleteMapping("historial")
+    public ResponseEntity<Void> borrarHistorialEventos(@RequestHeader("Authorization") String token) {
+        if (token == null || !token.startsWith("Bearer ")) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        String jwt = token.substring(7);
+        String correoUsuario = jwtUtil.obtenerCorreoDesdeJWT(jwt);
+
+        if (correoUsuario == null) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        Usuario usuario = usuarioService.findByEmail(correoUsuario);
+        if (usuario == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
+        }
+
+        usuarioService.borrarHistorialEventosUsuario(usuario.getUsuId());
+        return ResponseEntity.noContent().build();
     }
-}
+
     @PostMapping("buscar")
     public ResponseEntity<?> buscarYGuardarEventos(
             @RequestHeader("Authorization") String token,

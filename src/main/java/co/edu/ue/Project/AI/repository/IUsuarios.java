@@ -15,4 +15,5 @@ public interface IUsuarios {
     boolean deleteUsuarios(int usu_id);
     Usuario findByEmail(String email);
     Usuario findByNombre(String nombre);
+    
 }

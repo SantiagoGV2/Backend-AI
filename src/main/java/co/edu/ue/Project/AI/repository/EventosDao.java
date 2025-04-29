@@ -81,6 +81,12 @@ public class EventosDao implements IEventos {
 		return jpa.findByUsuario_UsuId(usuarioId);
 	}
 
+	@Override
+	public void deleteByUsuarioId(int usu_id) {
+	    jpa.deleteByUsuarioId(usu_id);
+	}
+
+
 	
 
 }

@@ -17,5 +17,6 @@ public interface IEventos{
 	boolean existsByTituloYDescripcion(String eveTitulo, String eveDescripcion);
 	List<Evento> findEventosByFiltros(List<String> filtros);
 	List<Evento> findByUsuario_UsuId(int usuarioId);
+	void deleteByUsuarioId(int usu_id);
 	
 }

@@ -1,6 +1,7 @@
 package co.edu.ue.Project.AI.service;
 
 import co.edu.ue.Project.AI.model.Usuario;
+import co.edu.ue.Project.AI.repository.IEventos;
 import co.edu.ue.Project.AI.repository.IUsuarios;
 
 import java.util.List;
@@ -13,6 +14,9 @@ public class UsuariosService implements IUsuariosService {
 
     @Autowired
     IUsuarios dao;
+    
+    @Autowired
+    IEventos eventoDao;
 
     @Override
     public Usuario agregarUsuarios(Usuario usuarios) {
@@ -60,5 +64,15 @@ public class UsuariosService implements IUsuariosService {
 	public Usuario findByNombre(String nombre) {
 		
 		return dao.findByNombre(nombre);
+	}
+	
+	@Override
+	public boolean borrarHistorialEventosUsuario(int usu_id) {
+	    try {
+	    	eventoDao.deleteByUsuarioId(usu_id);
+	        return true;
+	    } catch (Exception e) {
+	        return false;
+	    }
 	}
 }
