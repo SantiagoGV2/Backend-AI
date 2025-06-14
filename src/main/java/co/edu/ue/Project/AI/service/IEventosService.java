@@ -18,6 +18,7 @@ public interface IEventosService {
     List<Evento> buscarEventosDesdeWeb(String consulta, int usuId);
 	boolean existeEvento(Evento evento);
 	List<Evento> obtenerEventosPorUsuario(int usuId);
+	void borrarHistorialDeBusqueda(int usuId);
 	
 	
 }

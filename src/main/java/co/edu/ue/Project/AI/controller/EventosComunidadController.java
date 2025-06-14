@@ -15,6 +15,7 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 
 import co.edu.ue.Project.AI.model.Administradore;
@@ -181,5 +182,17 @@ public class EventosComunidadController {
 	        return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
 	    }
 	}
+	
+	@GetMapping(value="eventoComuFiltro", produces = MediaType.APPLICATION_JSON_VALUE)
+	public ResponseEntity<List<EventosComunidad>> filtrarEventos(
+	        @RequestParam(required = false) String titulo,
+	        @RequestParam(required = false) String categoria,
+	        @RequestParam(required = false) String estado,
+	        @RequestParam(required = false) String ubicacion) {
+
+	    List<EventosComunidad> eventos = service.filtrarEventos(titulo, categoria, estado, ubicacion);
+	    return new ResponseEntity<>(eventos, HttpStatus.OK);
+	}
+
 
 }

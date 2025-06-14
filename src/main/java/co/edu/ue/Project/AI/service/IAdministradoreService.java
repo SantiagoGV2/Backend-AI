@@ -4,7 +4,7 @@ import java.util.List;
 
 import co.edu.ue.Project.AI.model.Administradore;
 
-public interface IAdministradoreService {
+public interface IAdministradoreService{
 
 	Administradore registerAdministrador(Administradore administrador);
 	Administradore updateAdministrador(Administradore administrador);

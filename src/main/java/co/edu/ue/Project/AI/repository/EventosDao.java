@@ -50,9 +50,6 @@ public class EventosDao implements IEventos {
 		return null;
 	}
 
-	
-
-
 	@Override
 	public boolean existsByTituloYDescripcion(String eveTitulo, String eveDescripcion) {
 		return jpa.existsByTituloYDescripcion(eveTitulo, eveDescripcion);
@@ -74,7 +71,6 @@ public class EventosDao implements IEventos {
 	}
 	
 	
-
 	@Override
 	public List<Evento> findByUsuario_UsuId(int usuarioId) {
 		
@@ -86,7 +82,11 @@ public class EventosDao implements IEventos {
 	    jpa.deleteByUsuarioId(usu_id);
 	}
 
-
-	
+	@Override
+	public void deleteAllEventos(List<Evento> eventos) {
+		System.out.println("Se eliminarán " + eventos.size() + " eventos del usuario.");
+		jpa.deleteAll(eventos);
+		
+	}
 
 }

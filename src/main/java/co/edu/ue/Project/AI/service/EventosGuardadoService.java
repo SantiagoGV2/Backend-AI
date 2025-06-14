@@ -97,6 +97,7 @@ public class EventosGuardadoService implements IEventosGuardadoService {
 	            dto.setEventoComuFechaFin(ec.getEveComuFechaFin());
 	            dto.setEventoCategoria(ec.getEveComuCategoria());
 	            dto.setEventoComuEnlace(ec.getEveComuEnlace());
+	            dto.setEventoComuEstado(ec.getEveComuEstado());
 	        }
 
 	        // Si no es de comunidad, es un evento general
@@ -110,6 +111,7 @@ public class EventosGuardadoService implements IEventosGuardadoService {
 	            dto.setEventoFechaFin(e.getEveFechaFin());
 	            dto.setEventoCategoria(e.getEveCategoria());
 	            dto.setEventoEnlace(e.getEveEnlace());
+	            dto.setEventoEstado(e.getEveEstado());
 	        }
 
 	        dtos.add(dto);
@@ -117,6 +119,17 @@ public class EventosGuardadoService implements IEventosGuardadoService {
 
 	    return dtos;
 	}
+
+	@Override
+	public boolean eventoGuardadoExiste(int usuId, int eveId, int eveComuId) {
+	    if (eveId != 0) {
+	        return dao.existsByUsuarioUsuIdAndEventoEveId(usuId, eveId);
+	    } else if (eveComuId != 0) {
+	        return dao.existsByUsuarioUsuIdAndEventosComunidadEveComuId(usuId, eveComuId);
+	    }
+	    return false;
+	}
+
 
 
 }

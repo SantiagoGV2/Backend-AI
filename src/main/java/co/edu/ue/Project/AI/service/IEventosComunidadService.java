@@ -15,4 +15,6 @@ public interface IEventosComunidadService {
 	EventosComunidad deleteEventosComunidad(int id);
 	List<Evento> obtenerEventosPorAdministrador(int admId);
 	List<EventosComunidad> obtenerEventosComunidadPorAdministrador(int admId);
+	List<EventosComunidad> filtrarEventos(String titulo, String categoria, String estado, String ubicacion);
+
 }

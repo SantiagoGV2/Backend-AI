@@ -13,5 +13,5 @@ public interface IEventosCompartidoDao {
 	List<EventosCompartido> allDatos();
 	EventosCompartido searchById(int id);
 	void deleteEventosCompartido(int id);
-
+	void deleteByEventoIdIn(List<Integer> eventoIds);
 }

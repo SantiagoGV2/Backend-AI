@@ -13,4 +13,8 @@ public interface IEventosGuardadoDao {
 	EventosGuardado searchById(int id);
 	void deleteEventosGuardado(int id);
 	List<EventosGuardado> findByUsuarioUsuId(int usuId);
+	boolean eventoGuardadoExiste(int usuId, int eveId, int eveComuId);
+	boolean existsByUsuarioUsuIdAndEventoEveId(int usuId, int eveId);
+	boolean existsByUsuarioUsuIdAndEventosComunidadEveComuId(int usuId, int eveComuId);
+	void deleteByEventoIdIn(List<Integer> eventoIds);
 }

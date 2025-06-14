@@ -1,7 +1,5 @@
 package co.edu.ue.Project.AI.repository;
 
-
-
 import java.util.List;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -11,8 +9,6 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.transaction.annotation.Transactional;
 
 import co.edu.ue.Project.AI.model.Evento;
-
-
 
 public interface IEventosJpa extends JpaRepository<Evento, Integer> {
 	

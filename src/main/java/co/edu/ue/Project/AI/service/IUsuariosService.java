@@ -3,8 +3,9 @@ package co.edu.ue.Project.AI.service;
 import java.util.List;
 
 import co.edu.ue.Project.AI.model.Usuario;
+import org.springframework.security.core.userdetails.UserDetailsService;
 
-public interface IUsuariosService {
+public interface IUsuariosService{
     
     Usuario agregarUsuarios(Usuario usuarios);
     Usuario actualizarUsuarios (Usuario usuarios);

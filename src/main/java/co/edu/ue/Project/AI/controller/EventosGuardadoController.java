@@ -94,6 +94,17 @@ public class EventosGuardadoController {
 		    if (email != null) {
 		        Usuario usuario = usuarioService.findByEmail(email); // Asegúrate que este método existe
 		        if (usuario != null) {
+		            // Verificar si el evento ya está guardado para el usuario
+		        	boolean existe = service.eventoGuardadoExiste(
+		        		    usuario.getUsuId(),
+		        		    evento.getEvento() != null ? evento.getEvento().getEveId() : 0,
+		        		    evento.getEventosComunidad() != null ? evento.getEventosComunidad().getEveComuId() : 0
+		        		);
+		            if (existe) {
+		                // Si ya existe, retornamos un código 409 Conflict
+		                return new ResponseEntity<>(HttpStatus.CONFLICT);
+		            }
+		            
 		            evento.setUsuario(usuario); // Asigna el usuario al evento
 		            service.registerEventosGuardado(evento);
 		            return new ResponseEntity<>(HttpStatus.CREATED);
@@ -103,9 +114,6 @@ public class EventosGuardadoController {
 		    return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
 		}
 
-		
-		
-		
 		@GetMapping("eventoGuardadoUsuario")
 		public ResponseEntity<List<EventosGuardadoDTO>> getEventosGuardadosByToken(
 		        @RequestHeader("Authorization") String token) {

@@ -15,6 +15,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
@@ -82,34 +84,13 @@ public class UsuariosController {
     }
     
 }
-    @GetMapping(value = "usuarios/auth", produces = MediaType.APPLICATION_JSON_VALUE)
-    public ResponseEntity<?> getAuthenticatedUser(@RequestHeader(value = "Authorization", required = false) String token) {
-        if (token == null || !token.startsWith("Bearer ")) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token no proporcionado o inválido");
-        }
-
-        try {
-            // Eliminar "Bearer " para extraer el token puro
-            String jwtToken = token.replace("Bearer ", "");
-            String username = jwtUtil.extractUsername(jwtToken);
-
-            if (username == null || username.isEmpty()) {
-                return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Token inválido o expirado");
-            }
-
-            Usuario usuario = service.findByEmail(username);
-            if (usuario == null) {
-                return ResponseEntity.status(HttpStatus.NOT_FOUND).body("Usuario no encontrado");
-            }
-
-            return ResponseEntity.ok(usuario);
-
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Error al procesar el token");
-        }
+    @GetMapping("/usuarios/auth")
+    public ResponseEntity<Usuario> getAuthenticatedUser(@AuthenticationPrincipal UserDetails userDetails) {
+        // Si el código llega aquí, es porque Spring Security ya validó el token.
+        // Simplemente obtenemos el usuario y lo devolvemos.
+        Usuario usuario = service.findByEmail(userDetails.getUsername());
+        return ResponseEntity.ok(usuario);
     }
-
-
 
     /**
      * ✅ Endpoint para login con JWT

@@ -62,12 +62,12 @@ public class Evento implements Serializable {
 	private Usuario usuario;
 
 	//bi-directional many-to-one association to EventosCompartido
-	@OneToMany(mappedBy="evento")
+	@OneToMany(mappedBy="evento", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference(value = "eventoIA-compartir")
 	private List<EventosCompartido> eventosCompartidos;
 
 	//bi-directional many-to-one association to EventosGuardado
-	@OneToMany(mappedBy="evento")
+	@OneToMany(mappedBy="evento", cascade = CascadeType.ALL, orphanRemoval = true)
 	@JsonManagedReference(value = "eventoIA-guardar")
 	private List<EventosGuardado> eventosGuardados;
 

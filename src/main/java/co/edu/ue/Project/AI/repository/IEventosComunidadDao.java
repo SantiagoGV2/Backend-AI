@@ -17,4 +17,6 @@ public interface IEventosComunidadDao {
 	void deleteEventosComunidad(int id);
 	List<Evento> findByAdmin_AdmId(int admId);
 	List<EventosComunidad> findByAdministradore_AdmId(int admId);
+	List<EventosComunidad> filtrarEventos(String titulo, String categoria, String estado, String ubicacion);
+
 }

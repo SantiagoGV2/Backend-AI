@@ -77,5 +77,11 @@ public class EventosComunidadService implements IEventosComunidadService{
 	    return dao.findByAdministradore_AdmId(admId);
 	}
 
+	@Override
+	public List<EventosComunidad> filtrarEventos(String titulo, String categoria, String estado, String ubicacion) {
+		
+		return dao.filtrarEventos(titulo, categoria, estado, ubicacion);
+	}
+
 
 }

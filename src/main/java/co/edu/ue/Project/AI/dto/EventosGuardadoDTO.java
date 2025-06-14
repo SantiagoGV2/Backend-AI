@@ -21,6 +21,7 @@ public class EventosGuardadoDTO {
     private Timestamp eventoFechaFin;
     private String eventoCategoria;
     private String eventoEnlace;
+    private String eventoEstado;
 
     // Datos del evento comunidad (si aplica)
     private Integer eventoComuId;
@@ -31,8 +32,25 @@ public class EventosGuardadoDTO {
     private Timestamp eventoComuFechaFin;
     private String eventoComuCategoria;
     private String eventoComuEnlace;
+    private String eventoComuEstado;
 
-    public EventosGuardadoDTO() {}
+    public String getEventoEstado() {
+		return eventoEstado;
+	}
+
+	public void setEventoEstado(String eventoEstado) {
+		this.eventoEstado = eventoEstado;
+	}
+
+	public String getEventoComuEstado() {
+		return eventoComuEstado;
+	}
+
+	public void setEventoComuEstado(String eventoComuEstado) {
+		this.eventoComuEstado = eventoComuEstado;
+	}
+
+	public EventosGuardadoDTO() {}
 
     // Getters y setters
 

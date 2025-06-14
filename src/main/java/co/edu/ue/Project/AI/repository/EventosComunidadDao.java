@@ -60,4 +60,10 @@ public class EventosComunidadDao implements IEventosComunidadDao{
 		return jpa.findByAdministradore_AdmId(admId);
 	}
 
+	@Override
+	public List<EventosComunidad> filtrarEventos(String titulo, String categoria, String estado, String ubicacion) {
+		
+		return jpa.filtrarEventos(titulo, categoria, estado, ubicacion);
+	}
+
 }

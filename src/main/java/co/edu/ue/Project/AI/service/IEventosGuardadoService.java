@@ -14,4 +14,5 @@ public interface IEventosGuardadoService {
 	EventosGuardado deleteEventosGuardado(int id);
 	List<EventosGuardado> findByUsuarioUsuId(int usuId);
 	List<EventosGuardadoDTO> findDetallesEventosGuardadosByUsuarioId(int usuId);
+	boolean eventoGuardadoExiste(int usuId, int eveId, int eveComuId);
 }

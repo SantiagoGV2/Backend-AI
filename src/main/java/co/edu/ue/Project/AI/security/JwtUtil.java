@@ -4,6 +4,7 @@ import com.auth0.jwt.JWT;
 import com.auth0.jwt.algorithms.Algorithm;
 import com.auth0.jwt.exceptions.JWTVerificationException;
 
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.stereotype.Component;
 
 import java.util.Date;
@@ -41,5 +42,20 @@ public class JwtUtil {
         } catch (JWTVerificationException e) {
             return null; // Devuelve null si el token no es válido
         }
+    }
+    
+    public boolean validateToken(String token, UserDetails userDetails) {
+        final String username = extractUsername(token);
+        return (username.equals(userDetails.getUsername()) && !isTokenExpired(token));
+    }
+    
+    public Date extractExpiration(String token) {
+        return JWT.require(Algorithm.HMAC256(SECRET_KEY))
+                .build()
+                .verify(token)
+                .getExpiresAt();
+    }
+    private Boolean isTokenExpired(String token) {
+        return extractExpiration(token).before(new Date());
     }
 }

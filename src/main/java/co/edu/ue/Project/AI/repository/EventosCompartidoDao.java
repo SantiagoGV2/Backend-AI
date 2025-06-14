@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Repository;
 
+import co.edu.ue.Project.AI.model.Evento;
 import co.edu.ue.Project.AI.model.EventosCompartido;
 @Repository
 public class EventosCompartidoDao implements IEventosCompartidoDao {
@@ -39,6 +40,11 @@ public class EventosCompartidoDao implements IEventosCompartidoDao {
 	public void deleteEventosCompartido(int id) {
 		
 		jpa.deleteById(id);
+	}
+
+	@Override
+	public void deleteByEventoIdIn(List<Integer> eventoIds) { // El nombre aquí puede seguir igual
+	    jpa.deleteAllByEvento_EveIdIn(eventoIds); // Pero la llamada debe usar el nuevo nombre
 	}
 
 	

@@ -11,7 +11,7 @@ import co.edu.ue.Project.AI.security.JwtUtil;
 import co.edu.ue.Project.AI.service.IEventosService;
 import co.edu.ue.Project.AI.service.IUsuariosService;
 
-
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -20,6 +20,8 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -44,7 +46,33 @@ public class EventosController {
     
     @Autowired
     private JwtUtil jwtUtil;
-  
+    
+    @GetMapping("/ping")
+    public ResponseEntity<String> ping() {
+        return ResponseEntity.ok("Pong!");
+    }
+    @GetMapping("/test-auth")
+    public ResponseEntity<Map<String, Object>> testAuthentication(@AuthenticationPrincipal UserDetails userDetails) {
+        
+        System.out.println("\n======================================================");
+        System.out.println("DIAGNÓSTICO FINAL EN /test-auth");
+        
+        if (userDetails == null) {
+            System.out.println("!!! RESULTADO: El endpoint fue alcanzado, PERO el UserDetails es NULO.");
+            System.out.println("======================================================\n");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
+        }
+
+        System.out.println("Username recibido en el controlador: " + userDetails.getUsername());
+        System.out.println("Permisos (Authorities) recibidos en el controlador: " + userDetails.getAuthorities());
+        System.out.println("======================================================\n");
+
+        Map<String, Object> response = new HashMap<>();
+        response.put("username", userDetails.getUsername());
+        response.put("authorities", userDetails.getAuthorities());
+        
+        return ResponseEntity.ok(response);
+    }
     
     @GetMapping(value="eventos")
     public List<Evento> getAllEventos() {
@@ -71,13 +99,19 @@ public class EventosController {
     
     @DeleteMapping("historial")
     public ResponseEntity<Void> borrarHistorialEventos(@RequestHeader("Authorization") String token) {
+        // YA NO NECESITAS ESTOS 'if'. Si el token fuera inválido o no existiera,
+        // Spring Security habría rechazado la petición antes de llegar aquí.
+        /*
         if (token == null || !token.startsWith("Bearer ")) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
-
+        */
+        
+        // El token llega aquí limpio y listo para ser usado.
         String jwt = token.substring(7);
         String correoUsuario = jwtUtil.obtenerCorreoDesdeJWT(jwt);
 
+        // Esta validación sigue siendo útil, por si el usuario fue borrado pero el token aún es válido.
         if (correoUsuario == null) {
             return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
         }
@@ -87,7 +121,9 @@ public class EventosController {
             return ResponseEntity.status(HttpStatus.NOT_FOUND).build();
         }
 
-        usuarioService.borrarHistorialEventosUsuario(usuario.getUsuId());
+        // Llamamos a nuestro método inteligente desde el EventosService
+        service.borrarHistorialDeBusqueda(usuario.getUsuId());
+        
         return ResponseEntity.noContent().build();
     }
 
