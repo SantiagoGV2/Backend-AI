@@ -47,33 +47,7 @@ public class EventosController {
     @Autowired
     private JwtUtil jwtUtil;
     
-    @GetMapping("/ping")
-    public ResponseEntity<String> ping() {
-        return ResponseEntity.ok("Pong!");
-    }
-    @GetMapping("/test-auth")
-    public ResponseEntity<Map<String, Object>> testAuthentication(@AuthenticationPrincipal UserDetails userDetails) {
-        
-        System.out.println("\n======================================================");
-        System.out.println("DIAGNÓSTICO FINAL EN /test-auth");
-        
-        if (userDetails == null) {
-            System.out.println("!!! RESULTADO: El endpoint fue alcanzado, PERO el UserDetails es NULO.");
-            System.out.println("======================================================\n");
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).build();
-        }
-
-        System.out.println("Username recibido en el controlador: " + userDetails.getUsername());
-        System.out.println("Permisos (Authorities) recibidos en el controlador: " + userDetails.getAuthorities());
-        System.out.println("======================================================\n");
-
-        Map<String, Object> response = new HashMap<>();
-        response.put("username", userDetails.getUsername());
-        response.put("authorities", userDetails.getAuthorities());
-        
-        return ResponseEntity.ok(response);
-    }
-    
+   
     @GetMapping(value="eventos")
     public List<Evento> getAllEventos() {
         return service.todasEventos();

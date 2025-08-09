@@ -33,6 +33,9 @@ import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 import java.util.stream.Collectors;
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import org.springframework.web.util.UriComponentsBuilder;
+import java.util.Objects;
 
 @Service
 public class EventosService implements IEventosService {
@@ -50,11 +53,17 @@ public class EventosService implements IEventosService {
     
     @Autowired
     IEventosCompartidoDao eventosCompartidosDao;
+    
+    // El valor de la propiedad se lee correctamente desde application.properties
+    @Value("${google.search.api.key}")
+    private String googleSearchApiKey; // Este ya estaba bien, pero lo dejamos para confirmar
+
+    private static final String GoogleSearch_CX = "903c92c91c9cf4090"; // <-- CORREGIDO: Nombre de constante válido
 
     @Value("${gemini.api.key}")
-    private String GEMINI_API_KEY;
-    
-    private final String API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
+    private String geminiApiKey; // <-- CORREGIDO: Nombre en camelCase
+
+    private final String API_URL_GEMINI = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=";
     
     @Override
     public Evento agregarEventos(Evento eventos) {
@@ -86,6 +95,38 @@ public class EventosService implements IEventosService {
         return dao.deleteEventos(eve_id);
     }
     
+    
+    private String buscarResultadosEnGoogle(String consulta) {
+    	logger.info("Llamando a Google Custom Search API para: '{}'", consulta);
+        
+        String apiUrl = "https://www.googleapis.com/customsearch/v1";
+        RestTemplate restTemplate = new RestTemplate();
+
+        // Construimos la URL usando las variables con nombres corregidos
+        UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(apiUrl)
+                .queryParam("key", googleSearchApiKey) 
+                .queryParam("cx", GoogleSearch_CX)      // <-- CORREGIDO
+                .queryParam("q", consulta);
+        
+
+        try {
+            ResponseEntity<GoogleSearchResponse> response = restTemplate.getForEntity(builder.toUriString(), GoogleSearchResponse.class);
+
+            if (response.getStatusCode().is2xxSuccessful() && response.getBody() != null && response.getBody().getItems() != null) {
+                StringBuilder snippets = new StringBuilder();
+                for (SearchItem item : response.getBody().getItems()) {
+                    snippets.append(item.getTitle()).append(": ").append(item.getSnippet())
+                           .append(" URL: ").append(item.getLink()).append(". ");
+                }
+                logger.info("Snippets obtenidos de Google: {}", snippets.toString());
+                return snippets.toString();
+            }
+        } catch (Exception e) {
+            logger.error("Error al llamar a Google Custom Search API: {}", e.getMessage());
+        }
+        
+        return "";
+    }
     @Transactional
     public void borrarHistorialDeBusqueda(int usuarioId) {
         logger.info("Iniciando borrado de historial para el usuario ID: {}", usuarioId);
@@ -114,7 +155,7 @@ public class EventosService implements IEventosService {
  // CAMBIO: Lógica de búsqueda simplificada y más robusta
     @Override
     public List<Evento> buscarEventosDesdeWeb(String consulta, int usuId) {
-        logger.info("Buscando eventos desde web con consulta: '{}' para usuario ID: {}", consulta, usuId);
+    	logger.info("Buscando eventos desde web con consulta: '{}', usuario ID: {}", consulta, usuId);
         Usuario usuario = usuarioService.buscarIdUsuarios(usuId);
         if (usuario == null) {
             logger.error("No se encontró un usuario con ID: {}", usuId);
@@ -128,17 +169,26 @@ public class EventosService implements IEventosService {
             return Collections.emptyList();
         }
         // se manejará al momento de guardar y determinar el estado.
-        List<Evento> eventosValidos = eventosEncontrados.stream()
+        final LocalDateTime ahora = LocalDateTime.now();
+        
+        List<Evento> eventosFuturos = eventosEncontrados.stream()
             .filter(evento -> {
-                boolean esFechaValida = evento.getEveFechaFin() == null || evento.getEveFechaFin().toLocalDateTime().isAfter(LocalDateTime.now());
-                if (!esFechaValida) {
-                    logger.warn("Evento filtrado por fecha vencida: {}", evento.getEveTitulo());
+                // Si el evento no tiene fecha de inicio, lo dejamos pasar por si acaso
+                if (evento.getEveFechaInicio() == null) {
+                    return true; 
                 }
-                return esFechaValida;
+                // Comparamos la fecha del evento con la fecha actual
+                // El evento pasa el filtro si su fecha NO es anterior a ahora.
+                return !evento.getEveFechaInicio().toLocalDateTime().isBefore(ahora);
             })
             .collect(Collectors.toList());
 
-        return filtrarYGuardarEventos(eventosValidos, usuario);
+        if (eventosFuturos.isEmpty()) {
+            logger.warn("Todos los eventos encontrados para '{}' ya han pasado. No se mostrarán.", consulta);
+            return Collections.emptyList();
+        }
+
+        return filtrarYGuardarEventos(eventosFuturos, usuario);
     }
 
     /**
@@ -167,43 +217,55 @@ public class EventosService implements IEventosService {
 
  // CAMBIO: Método principal para llamar a la API
     private List<Evento> obtenerEventosDesdeAPI(String consulta) {
-        String apiUrl = API_URL + GEMINI_API_KEY;
-        RestTemplate restTemplate = new RestTemplate();
+        // 1. Buscar en una fuente de datos real
+        String resultadosDeBusqueda = buscarResultadosEnGoogle(consulta);
+
+        if (resultadosDeBusqueda == null || resultadosDeBusqueda.isEmpty()) {
+            logger.warn("No se obtuvieron resultados de la búsqueda web para: {}", consulta);
+            return Collections.emptyList();
+        }
         
-        // Obtenemos la fecha actual para dársela a la IA como referencia
-        String fechaActual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("dd 'de' MMMM 'de' yyyy"));
-
-        // CAMBIO: Prompt mucho más específico y riguroso
-        String prompt = String.format(
-            "Actúa como un asistente experto en encontrar eventos. Necesito una lista de eventos futuros sobre '%s', " +
-            "que ocurran a partir de la fecha de hoy, %s. " +
-            "Responde EXCLUSIVAMENTE con un array de objetos JSON. No incluyas texto fuera del array. " +
-            "Para cada evento, asegúrate de que el enlace sea una URL oficial y funcional. Si no puedes encontrar un enlace real y verificable, " +
-            "OBLIGATORIAMENTE asigna el valor 'No disponible' al campo 'enlace' y no inventes una URL. " +
-            "La estructura debe ser: " +
-            "{\"titulo\": \"...\", \"descripcion\": \"...\", \"fecha_inicio\": \"YYYY-MM-DD HH:mm:ss\", " +
-            "\"fecha_fin\": \"YYYY-MM-DD HH:mm:ss\", \"ubicacion\": \"...\", \"enlace\": \"URL verificada\", " +
-            "\"categoria\": \"...\"}",
-            consulta, fechaActual
+        String fechaActual = LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss"));
+        String categoriasValidas = "'tecnológico', 'financiero', 'deportivo', 'cultural', 'educativo', 'general'";
+        String promptParaGemini = String.format(
+        		"Tu única tarea es extraer eventos CUYA FECHA DE INICIO SEA FUTURA. La fecha y hora actual es %s. " +
+        		        "CUALQUIER evento con una fecha de inicio anterior a la fecha actual debe ser IGNORADO COMPLETAMENTE. No lo incluyas en la respuesta bajo ninguna circunstancia. " +
+        		        "Responde EXCLUSIVAMENTE con un array de objetos JSON sin texto introductorio. Si no encuentras eventos futuros, devuelve un array vacío []. " +
+        		        "La estructura JSON requerida es la siguiente: " +
+        		        "{" +
+        		        "  \"titulo\": \"(String) El nombre del evento.\"," +
+        		        "  \"descripcion\": \"(String) Una descripción breve.\"," +
+        		        "  \"fecha_inicio\": \"(String) La fecha y hora de inicio en formato 'YYYY-MM-DD HH:mm:ss'. Si la hora no está disponible, usa '09:00:00'. Si es indeterminable, usa un valor JSON null.\"," +
+        		        "  \"fecha_fin\": \"(String) La fecha de fin en formato 'YYYY-MM-DD HH:mm:ss'. Si no se menciona, usa un valor JSON null.\"," +
+        		        "  \"ubicacion\": \"(String) El lugar del evento. Si no se menciona, usa 'No disponible'.\"," +
+        		        "  \"enlace\": \"(String) La URL. Si no hay, usa un valor JSON null.\"," +
+        		        "  \"categoria\": \"(String) Elige la categoría MÁS RELEVANTE de la lista: [%s]. Si ninguna encaja, usa 'general'.\"" +
+        		        "}" +
+        		        "Texto a analizar: \"%s\"",
+        		        fechaActual,
+        		        categoriasValidas,
+        		        resultadosDeBusqueda
         );
-
+        
+        // 3. Llamar a Gemini
+        String apiUrl = API_URL_GEMINI + geminiApiKey; // <-- CORREGIDO
+        RestTemplate restTemplate = new RestTemplate();
         String jsonBody = String.format(
-            "{\"contents\": [{\"parts\": [{\"text\": \"%s\"}]}], " +
-            "\"generationConfig\": {\"response_mime_type\": \"application/json\"}}", 
-            prompt.replace("\"", "\\\"")
+            "{\"contents\":[{\"parts\":[{\"text\":\"%s\"}]}], \"generationConfig\": {\"response_mime_type\":\"application/json\"}}",
+            promptParaGemini.replace("\"", "\\\"")
         );
-
+        
         HttpHeaders headers = new HttpHeaders();
         headers.setContentType(MediaType.APPLICATION_JSON);
         HttpEntity<String> entity = new HttpEntity<>(jsonBody, headers);
 
         try {
-            logger.info("Enviando solicitud a la API de Gemini 1.5 Pro.");
+            logger.info("Enviando solicitud a la API de Gemini para estructurar datos.");
             ResponseEntity<String> response = restTemplate.postForEntity(apiUrl, entity, String.class);
-            logger.info("Respuesta de la API recibida.");
+            logger.info("Respuesta de Gemini recibida.");
             return extraerEventosDesdeRespuestaJSON(response.getBody());
         } catch (Exception e) {
-            logger.error("Error al llamar a la API de Gemini: {}", e.getMessage(), e);
+            logger.error("Error al llamar a la API de Gemini: {}", e.getMessage());
             return new ArrayList<>();
         }
     }
@@ -248,21 +310,13 @@ public class EventosService implements IEventosService {
     }
     
     public void validarCategorias(List<Evento> eventos) {
-        Set<String> categoriasValidas = Set.of(
-            "tecnológico", "financiero", "deportivo", "cultural", "educativo", "general"
-        );
         eventos.forEach(evento -> {
-            if (evento.getEveCategoria() == null) {
-                evento.setEveCategoria("General");
-                return;
-            }
-            String categoriaNormalizada = evento.getEveCategoria().trim().toLowerCase();
-            if (!categoriasValidas.contains(categoriaNormalizada)) {
-                logger.warn("Categoría inválida '{}' en evento '{}'. Se asignará 'General'.", 
-                            evento.getEveCategoria(), evento.getEveTitulo());
+            String categoria = evento.getEveCategoria();
+            if (categoria == null || categoria.trim().isEmpty()) {
                 evento.setEveCategoria("General");
             } else {
-                // Capitalizar la primera letra para consistencia
+                // Capitalizar la primera letra para consistencia visual
+                String categoriaNormalizada = categoria.trim().toLowerCase();
                 evento.setEveCategoria(categoriaNormalizada.substring(0, 1).toUpperCase() + categoriaNormalizada.substring(1));
             }
         });
@@ -297,7 +351,7 @@ public class EventosService implements IEventosService {
 
     
     public static Timestamp convertirStringATimestamp(String fechaStr) {
-        if (fechaStr == null || fechaStr.trim().isEmpty() || fechaStr.equalsIgnoreCase("No disponible")) {
+    	if (fechaStr == null || fechaStr.trim().isEmpty() || fechaStr.equalsIgnoreCase("No disponible") || fechaStr.equalsIgnoreCase("null")) {
             return null;
         }
         for (DateTimeFormatter formatter : FORMATTERS) {
@@ -353,5 +407,23 @@ public class EventosService implements IEventosService {
     public List<Evento> obtenerEventosPorUsuario(int usuarioId) {
         return dao.findByUsuario_UsuId(usuarioId);
     }
-
+    
+}
+@JsonIgnoreProperties(ignoreUnknown = true)
+class GoogleSearchResponse {
+    private List<SearchItem> items;
+    public List<SearchItem> getItems() { return items; }
+    public void setItems(List<SearchItem> items) { this.items = items; }
+}
+@JsonIgnoreProperties(ignoreUnknown = true)
+class SearchItem {
+    private String title;
+    private String link;
+    private String snippet;
+    public String getTitle() { return title; }
+    public void setTitle(String title) { this.title = title; }
+    public String getLink() { return link; }
+    public void setLink(String link) { this.link = link; }
+    public String getSnippet() { return snippet; }
+    public void setSnippet(String snippet) { this.snippet = snippet; }
 }
